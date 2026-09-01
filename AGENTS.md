@@ -1,26 +1,41 @@
 # AGENTS.md — contracts-notification
 
-MuxCore sidecar module (`contracts-notification`). Workspace deploy and SSH: [`../AGENTS.md`](../AGENTS.md). Default ports: [`_mvp/PORTS.md`](../_mvp/PORTS.md).
+Protobuf/gRPC **contract** repository — not a runnable sidecar. There is no module binary, listen port, or TLS config here. Workspace context: [`../AGENTS.md`](../AGENTS.md).
 
 ## Module identity
 
 | Field | Value |
 |-------|-------|
 | Directory | `contracts-notification` |
-| Capabilities | see muxcore.json |
-| Contracts | none declared |
+| Type | contracts (proto + generated Go stubs) |
+| Capability (catalog) | `contracts.notification` |
+| Interface name | `NotificationProvider` (gRPC service `NotificationService`) |
+| Published tag | `v0.1.1` |
 
-## Agent rules
+Implementers (`notification-default`, `notification-apprise`) advertise capability **`notification`** and serve **`NotificationService`**. `contracts-reconciler` maps the logical name **`NotificationProvider`** to this repo.
 
-- Modules run as gRPC sidecars; capabilities are the security boundary.
-- TLS required in production (`MUXCORE_INSECURE_DISABLE_TLS` is dev-only).
-- Match existing Go patterns; run `gofmt` and package tests before finishing.
-- Cross-module events: prefer `github.com/Muxcore-Media/contracts-media/events` over deprecated `core/pkg/contracts` aliases.
-- Do not edit polluted workspace dumps (see `MASTER-ROADMAP.md` Appendix H).
+## Workflow
+
+1. Edit `proto/muxcore/notification/v1/notification.proto`.
+2. Regenerate stubs: `make proto` (pins `protoc-gen-go@v1.36.11`, `protoc-gen-go-grpc@v1.5.1`).
+3. Commit proto **and** generated `muxcore/notification/v1/*.go` together.
+4. Run tests: `go test ./...` (includes `compat_test.go` stability checks).
+5. Bump `muxcore.json` / `CHANGELOG.md` / tag on breaking or release-worthy changes.
+
+Do not edit polluted workspace dumps (see `MASTER-ROADMAP.md` Appendix H).
 
 ## Build
 
 ```bash
 cd contracts-notification
+nix-shell -p go protobuf --run 'make proto && go test ./...'
+```
+
+On a dev host with Go and protoc on PATH:
+
+```bash
+make proto
 go test ./...
 ```
+
+`make clean` clears the Go build cache only — it does **not** remove published stubs.

@@ -2,12 +2,18 @@ syntax = "proto3";
 
 package muxcore.notification.v1;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/Muxcore-Media/contracts-notification/muxcore/notification/v1;notificationv1";
 
+// NotificationService is the gRPC surface for NotificationProvider implementers
+// (notification-default, notification-apprise) and the name reconciled by contracts-reconciler.
 service NotificationService {
   rpc Notify(NotifyRequest) returns (NotifyResponse);
   rpc Configure(ConfigureRequest) returns (ConfigureResponse);
   rpc Status(StatusRequest) returns (StatusResponse);
+  // Test sends a fixture ping to one channel (admin-ui / muxcorectl smoke; no real media event).
+  rpc Test(TestRequest) returns (TestResponse);
 }
 
 enum Channel {
@@ -19,10 +25,19 @@ enum Channel {
   CHANNEL_APPRISE = 5;
 }
 
+// Severity drives portable Discord/Slack color mapping across implementers.
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_INFO = 1;
+  SEVERITY_SUCCESS = 2;
+  SEVERITY_WARNING = 3;
+  SEVERITY_ERROR = 4;
+}
+
 message NotifyRequest {
   string title = 1;
   string message = 2;
-  string severity = 3;       // "info", "success", "warning", "error"
+  Severity severity = 3;
   string source_module = 4;  // module that triggered the notification
   repeated Channel channels = 5;  // empty = all configured channels
   map<string, string> fields = 6; // additional structured fields
@@ -40,7 +55,22 @@ message ChannelResult {
 
 message ConfigureRequest {
   Channel channel = 1;
-  map<string, string> settings = 2; // per-channel config (webhook_url, smtp_server, etc.)
+  // Per-channel settings. Canonical keys (implementers MUST accept these names):
+  //
+  // Discord, Slack, Webhook:
+  //   webhook_url — HTTPS webhook endpoint
+  //
+  // Email:
+  //   smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from, to
+  //
+  // Apprise:
+  //   urls — comma-separated Apprise URLs
+  //   token — optional Apprise API token
+  //
+  // Aliases such as "host", "from", or "pass" are non-portable; callers should use the keys above.
+  map<string, string> settings = 2;
+  // When false, disable the channel (clear active configuration). When true or unset, upsert settings.
+  bool enabled = 3;
 }
 
 message ConfigureResponse {
@@ -56,5 +86,17 @@ message StatusResponse {
 message ChannelStatus {
   Channel channel = 1;
   bool enabled = 2;
+  // Human-readable label (channel type, recipient hint). Must NOT include webhook URLs,
+  // SMTP credentials, Apprise tokens, or other secrets.
   string description = 3;
+  string last_error = 4;
+  google.protobuf.Timestamp last_success_at = 5;
+}
+
+message TestRequest {
+  Channel channel = 1;
+}
+
+message TestResponse {
+  ChannelResult result = 1;
 }
