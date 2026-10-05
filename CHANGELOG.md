@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2] - 2026-10-05
+
+### Changed
+- CI runs on GitHub-hosted runners from the umbrella template; retired-origin workflows removed.
+- Dependencies resolve from published GitHub tags (no filesystem `replace`); requires core v0.6.0.
+
 ## [0.1.1] — 2026-08-31
 
 ### Added
@@ -8,7 +14,7 @@
 - `ConfigureRequest.enabled` to disable or clear a channel without deleting the row.
 - `ChannelStatus.last_error` and `ChannelStatus.last_success_at` for operator visibility.
 - Documented canonical `ConfigureRequest.settings` keys in proto comments and README.
-- Forgejo `proto-check` CI job; `compat_test.go` freezing enum numbers, RPC names, and field tags.
+- `proto-check` CI job; `compat_test.go` freezing enum numbers, RPC names, and field tags.
 - `COMPATIBILITY.md`; proto plugin version pins in `Makefile`.
 
 ### Changed

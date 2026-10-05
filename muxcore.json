@@ -1,6 +1,6 @@
 {
   "name": "contracts-notification",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Notification contract interfaces for MuxCore",
   "capabilities": ["contracts.notification"],
   "roles": ["contracts"]
